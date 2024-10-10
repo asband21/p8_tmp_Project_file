@@ -41,3 +41,6 @@ void loop() {
 
 // 78 Top to bottom backward cutout
 // 80 Bottom to top Backward cutout
+
+//255 TOP MAX 795
+//46 BOTTOM MAX SPEED 799
