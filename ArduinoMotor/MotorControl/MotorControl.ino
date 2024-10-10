@@ -33,3 +33,11 @@ void loop() {
     }
   }
 }
+
+
+// 159 Top to bottom forward cutout
+// 167 Bottom to top forward cutout
+
+
+// 78 Top to bottom backward cutout
+// 80 Bottom to top Backward cutout
