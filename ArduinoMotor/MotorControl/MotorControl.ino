@@ -1,24 +1,29 @@
 
-//255 TOP MAX 795
-//46 BOTTOM MAX SPEED 799
+#define BWDMAXSPEEDPWM 46
+#define FWDMAXSPEEDPWM 255
 
-#define TOPTOBOTFWDCUT 159
-#define BOTTOTOPFWDCUT 159
-#define TOPTOBOTBWDCUT 78
-#define BOTTOTOPBWDCUT 80
+#define TOPTOBOTFWDCUT 158 //ON TO OFF FORWARD CUT OUT
+#define BOTTOTOPFWDCUT 168 //167   //OFF TO ON FORWARD CUT OUT
+#define TOPTOBOTBWDCUT 77  //78 //OFF TO ON BWD CUT OUT
+#define BOTTOTOPBWDCUT 79 //ON TO OFF BWD CUT OUT
 
 #define STOPPWM 128
 
-#define MAXROTATIONFWD 1963
-#define MAXROTATIONBWD -1972
+#define MAXROTATIONFWD 1970
+#define MAXROTATIONBWD -1975
 #define pwmPin 2
+
+#define RELAYDELAY 500
 
 
 void setup() {
   Serial.begin(9600);
   pinMode(pwmPin, OUTPUT);
   analogWrite(pwmPin, STOPPWM);
-  Serial.println("Type a value between -1972 to 1963");
+  Serial.print("Type a value between");
+  Serial.print(MAXROTATIONBWD);
+  Serial.print(" to ");
+  Serial.println(MAXROTATIONFWD);
 }
 
 void loop() {
@@ -34,10 +39,10 @@ void loop() {
 }
 
 void movefwd(int rpm){
-  uint8_t pwm_value= map(rpm, 0, 1963, 159, 255);
-  if(pwm_value<168){
-    analogWrite(pwmPin, 168);
-    delay(10);
+  uint8_t pwm_value= map(rpm, 0, MAXROTATIONFWD, TOPTOBOTFWDCUT, FWDMAXSPEEDPWM);
+  if(pwm_value<BOTTOTOPFWDCUT){
+    analogWrite(pwmPin, BOTTOTOPFWDCUT);
+    delay(RELAYDELAY);
   }
   analogWrite(pwmPin, pwm_value);
     Serial.println("Forward:");
@@ -45,10 +50,10 @@ void movefwd(int rpm){
 }
 
 void movebwd(int rpm){
-  uint8_t pwm_value= map(rpm, 0, 1972, 78, 46);
-  if(pwm_value>80){
-    analogWrite(pwmPin, 80);
-    delay(10);
+  uint8_t pwm_value= map(rpm, 0, MAXROTATIONBWD, TOPTOBOTBWDCUT, BWDMAXSPEEDPWM);
+  if(pwm_value>BOTTOTOPBWDCUT){
+    analogWrite(pwmPin, BOTTOTOPBWDCUT);
+    delay(RELAYDELAY);
   }
   analogWrite(pwmPin, pwm_value);
     Serial.println("Backward:");
@@ -64,7 +69,7 @@ void setRotation(int rpm){
     movefwd(rpm);
   }
   if(rpm==0){
-    analogWrite(pwmPin, 128);
+    analogWrite(pwmPin, STOPPWM);
   }
 }
 
