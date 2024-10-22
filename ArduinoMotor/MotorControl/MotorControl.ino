@@ -1,4 +1,4 @@
-
+//SWagged out  1.3kohm and 220uF RC FILTER
 #define BWDMAXSPEEDPWM 46
 #define FWDMAXSPEEDPWM 255
 
@@ -14,6 +14,8 @@
 #define pwmPin 2
 
 #define RELAYDELAY 500
+
+#define FWDOFFSETCORRECT 0.000001
 
 
 void setup() {
@@ -39,6 +41,9 @@ void loop() {
 }
 
 void movefwd(int rpm){
+  rpm=rpm+rpm*FWDOFFSETCORRECT;
+   if(rpm>MAXROTATIONFWD)
+     rpm=MAXROTATIONFWD;
   uint8_t pwm_value= map(rpm, 0, MAXROTATIONFWD, TOPTOBOTFWDCUT, FWDMAXSPEEDPWM);
   if(pwm_value<BOTTOTOPFWDCUT){
     analogWrite(pwmPin, BOTTOTOPFWDCUT);
@@ -50,7 +55,7 @@ void movefwd(int rpm){
 }
 
 void movebwd(int rpm){
-  uint8_t pwm_value= map(rpm, 0, MAXROTATIONBWD, TOPTOBOTBWDCUT, BWDMAXSPEEDPWM);
+  uint8_t pwm_value= map(rpm, 0, -MAXROTATIONBWD, TOPTOBOTBWDCUT, BWDMAXSPEEDPWM);
   if(pwm_value>BOTTOTOPBWDCUT){
     analogWrite(pwmPin, BOTTOTOPBWDCUT);
     delay(RELAYDELAY);
