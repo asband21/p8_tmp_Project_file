@@ -75,6 +75,7 @@ void setRotation(int rpm){
   }
   if(rpm==0){
     analogWrite(pwmPin, STOPPWM);
+    Serial.println("Stop");
   }
 }
 
