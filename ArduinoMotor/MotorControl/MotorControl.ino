@@ -15,7 +15,7 @@
 
 #define RELAYDELAY 500
 
-#define FWDOFFSETCORRECT 0.000001
+#define FWDOFFSETCORRECT 0.000001 //DISABLED
 
 
 void setup() {
