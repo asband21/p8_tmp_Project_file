@@ -91,8 +91,8 @@ void loop() {
         inManualMode = false;
         inAutoMode = false;
         inMenu = true;
-        refTracking(0);
-
+        returnToHome();
+        printMenu();
     } else {
       Serial.println("Invalid input. Please select 'm' for manual or 'a' for automatic.");
     }
@@ -221,4 +221,14 @@ float wrapAngle(float angle) {
   angle = fmod(angle + 180, 360);  // Wrap within [0, 360)
   if (angle < 0) angle += 360;     // Ensure positive result
   return angle - 180;              // Shift to [-180, 180]
+}
+
+void returnToHome(){
+  refTracking(0);
+  digitalWrite(CW_PIN, LOW);
+  digitalWrite(CCW_PIN, LOW);
+  digitalWrite(STOP_PIN, LOW);
+  analogWrite(IN1, 0);
+  analogWrite(IN3, 0);
+  //positionCount=0;
 }
