@@ -73,7 +73,7 @@ void loop() {
         angleInput.trim();
         float angleInp = angleInput.toFloat();
         float currentAngle = fmod((positionCount * degreesPerPulse + 180),(360 - 180));
-        goalAngle = fmod((angleInp+180), (360 - 180));
+        goalAngle = wrapAngle(angleInp);
         float deltaRot= getDeltaRotation(currentAngle, goalAngle);
         Serial.print("Moving to angle: ");
         Serial.println(goalAngle);
@@ -213,4 +213,10 @@ void refTracking(float deltaRotation) {
   digitalWrite(CW_PIN, LOW);
   digitalWrite(CCW_PIN, LOW);
   digitalWrite(STOP_PIN, HIGH);
+}
+
+float wrapAngle(float angle) {
+  angle = fmod(angle + 180, 360);  // Wrap within [0, 360)
+  if (angle < 0) angle += 360;     // Ensure positive result
+  return angle - 180;              // Shift to [-180, 180]
 }
