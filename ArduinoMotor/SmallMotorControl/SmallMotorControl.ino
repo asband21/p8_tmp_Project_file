@@ -8,7 +8,7 @@ const int IN4 = 10;  // Direction for Motor 2
 #define STOP_PIN 4 // Stop pin for testing 
 #define CW_PIN 5 // Clockwise motor pin
 #define CCW_PIN 6 // Counter-clockwise motor pin
-#define ALLOWEDERROR 2
+#define ALLOWEDERROR 0.05
 
 int pwmValue1 = 0;  // PWM value for Motor 1
 int pwmValue2 = 0;  // PWM value for Motor 2
@@ -21,7 +21,7 @@ bool inAutoMode = false;
 volatile long positionCount = 0;
 int lastAState = LOW;
 const float ppr = 10347;  // Pulses per revolution of your encoder
-float degreesPerPulse = (float)ppr / 180;
+float degreesPerPulse = (float)ppr / 360;
 float goalAngle = 0;
 
 
@@ -72,21 +72,27 @@ void loop() {
         String angleInput = Serial.readStringUntil('\n');
         angleInput.trim();
         float angleInp = angleInput.toFloat();
-        float currentAngle = fmod((positionCount * degreesPerPulse + 180),(360 - 180));
+        float currentAngle = -(positionCount * 360/ppr);
         goalAngle = wrapAngle(angleInp);
         float deltaRot= getDeltaRotation(currentAngle, goalAngle);
         Serial.print("Moving to angle: ");
         Serial.println(goalAngle);
+        Serial.print("Counter: ");
+        Serial.println(positionCount);
         Serial.print("Current angle: ");
         Serial.println(currentAngle);
         Serial.print("Delta rot: ");
         Serial.println(deltaRot);
-        refTracking(deltaRot);
+        refTracking(goalAngle );
+        currentAngle = -(positionCount * 360/ppr);
+        Serial.print("Final angle: ");
+        Serial.println(currentAngle);
      } else if (input == "exit") {
         inManualMode = false;
         inAutoMode = false;
         inMenu = true;
-        printMenu();
+        refTracking(0);
+
     } else {
       Serial.println("Invalid input. Please select 'm' for manual or 'a' for automatic.");
     }
@@ -189,26 +195,22 @@ void updatePosition() {
 }
 
 
-void refTracking(float deltaRotation) {
-  long int goalPositionCount = positionCount + deltaRotation*ppr/360;
+void refTracking(float goalAngle ) {
+  // long int goalPosition = positionCount + deltaRotation*ppr/360;
   long int allowedTrackingError= ppr*ALLOWEDERROR/360;
-
-  Serial.println(goalPositionCount);
-  Serial.println(allowedTrackingError);
+  long int goalPositionCount= -(goalAngle*ppr/360);
   while (!(positionCount > goalPositionCount - allowedTrackingError && positionCount <= goalPositionCount + allowedTrackingError)) { 
     if (positionCount < goalPositionCount) {
       digitalWrite(STOP_PIN, LOW);
       digitalWrite(CW_PIN, LOW);
       digitalWrite(CCW_PIN, HIGH);
-      Serial.println(positionCount);
     }
     if (positionCount > goalPositionCount) {
       digitalWrite(STOP_PIN, LOW);
       digitalWrite(CCW_PIN, LOW);
       digitalWrite(CW_PIN, HIGH);
-      Serial.println(positionCount);
     }
-    delay(10);
+    //delay(10);
   }
   digitalWrite(CW_PIN, LOW);
   digitalWrite(CCW_PIN, LOW);
