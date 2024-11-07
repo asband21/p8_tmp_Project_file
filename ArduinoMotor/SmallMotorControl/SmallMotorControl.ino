@@ -34,7 +34,7 @@ void setup() {
   analogWrite(IN1, 0);
   analogWrite(IN3, 0);
   digitalWrite(IN2, LOW);
-  digitalWrite(IN4, HIGH);
+  digitalWrite(IN4, LOW);
 
   pinMode(ENCODER_A_PIN, INPUT);
   pinMode(ENCODER_B_PIN, INPUT);
@@ -183,12 +183,11 @@ void updatePosition() {
   int aState = digitalRead(ENCODER_A_PIN);
   int bState = digitalRead(ENCODER_B_PIN);
 
- 
   if (aState != lastAState) {
     if (aState == HIGH && bState == LOW || aState == LOW && bState == HIGH){
-      positionCount--; // Clockwise
+      positionCount--; 
     } else {
-      positionCount++; // Counter-clockwise
+      positionCount++;
     }
   }
   lastAState = aState;
