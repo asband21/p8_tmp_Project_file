@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # Motor positions
-moter_1_x, moter_1_y = -2, -5
+moter_1_x, moter_1_y =-2, -5
 moter_2_x, moter_2_y = 2, -5
-moter_3_x, moter_3_y = 0, 4
+moter_3_x, moter_3_y = 0,  4
 
 # Lengths and angles for vectors
 len_origin_1 = math.sqrt(moter_1_x**2 + moter_1_y**2)
