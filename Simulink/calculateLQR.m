@@ -1,3 +1,5 @@
+function [theta_right, theta_left, K,S,P] = calculateLQR()
+
 bx = -100;
 by = -1000;
 br = -2000;
@@ -38,9 +40,11 @@ initial_guess = [0.3, 1.23];
 % men graf over optimering;
 %options = optimset('PlotFcns',@optimplotfval);
 minimum = fminsearch(b_min, initial_guess) %,options)
+theta_right = minimum(1);
+theta_left = minimum(2);
 
-theta_right = minimum(2)
-theta_left  = minimum(1)
+
+
 
 B = [cos(theta_right+vector_angel_1), cos(theta_left+vector_angel_2) 0;
      sin(theta_right+vector_angel_1) sin(theta_left+vector_angel_2) 1;
@@ -56,6 +60,4 @@ R = 1;
 
 [K,S,P] = lqr(A,B,Q,R)
 
-
-
-[theta_right, theta_left, K,S,P] = calculateLQR()
+end
