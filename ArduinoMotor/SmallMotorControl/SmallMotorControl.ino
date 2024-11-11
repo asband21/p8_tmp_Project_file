@@ -1,28 +1,36 @@
-const int IN1 = 13;  // PWM for Motor 1        //BEING USED FOR STOP PIN
-const int IN2 = 12;  // Direction for Motor 1
-const int IN3 = 8;  // PWM for Motor 2
-const int IN4 = 10;  // Direction for Motor 2
 
+#define IN1 13  // PWM for Motor 1       
+#define IN2 12  // Direction for Motor 1
+#define IN3 8  // PWM for Motor 2
+#define IN4 10  // Direction for Motor 2
+#define SPEED_PIN  11 //Pin for angle velocity
 #define ENCODER_A_PIN 2  // Channel A
 #define ENCODER_B_PIN 3  // Channel B
-#define STOP_PIN 4 // Stop pin for testing 
 #define CW_PIN 5 // Clockwise motor pin
 #define CCW_PIN 6 // Counter-clockwise motor pin
-#define ALLOWEDERROR 0.05
+
+#define ALLOWEDERRORINNER 0.05
+#define ALLOWEDERROROUTER 10 
+
+//Angular velocity PWMS
+#define MAXSPEEDPWM 229
+#define MIDSPEEDPWM 140
+#define MINSPEEDPWM 26
 
 int pwmValue1 = 0;  // PWM value for Motor 1
 int pwmValue2 = 0;  // PWM value for Motor 2
-bool inMenu = true;
-bool inManualMode = false;
-bool inAutoMode = false;
 
-
+bool inMenu = true;  //Menu flag
+bool inManualMode = false;  //Manual mode flag
+bool inAutoMode = false;   //auto mode flag
+bool trackingEnabled = false;
 
 volatile long positionCount = 0;
 int lastAState = LOW;
-const float ppr = 10347;  // Pulses per revolution of your encoder
-float degreesPerPulse = (float)ppr / 360;
+const float ppr = 10347;  // Pulses per revolution of encoder
+
 float goalAngle = 0;
+const float Kp = 0.5;  // Proportional gain for speed control
 
 
 void setup() {
@@ -30,6 +38,8 @@ void setup() {
   pinMode(IN2, OUTPUT);
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
+  pinMode(SPEED_PIN, OUTPUT);
+  
   Serial.begin(9600);
   analogWrite(IN1, 0);
   analogWrite(IN3, 0);
@@ -40,10 +50,9 @@ void setup() {
   pinMode(ENCODER_B_PIN, INPUT);
   pinMode(CCW_PIN, OUTPUT);
   pinMode(CW_PIN, OUTPUT);
-  pinMode(STOP_PIN, OUTPUT);
   digitalWrite(CW_PIN, LOW);
   digitalWrite(CCW_PIN, LOW);
-  digitalWrite(STOP_PIN, LOW);
+  analogWrite(SPEED_PIN, MINSPEEDPWM);
   attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN), updatePosition, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN), updatePosition, CHANGE);
 
@@ -83,7 +92,8 @@ void loop() {
         Serial.println(currentAngle);
         Serial.print("Delta rot: ");
         Serial.println(deltaRot);
-        refTracking(goalAngle );
+        trackingEnabled = true;
+        refTrackingLoop(goalAngle);
         currentAngle = -(positionCount * 360/ppr);
         Serial.print("Final angle: ");
         Serial.println(currentAngle);
@@ -195,17 +205,15 @@ void updatePosition() {
 
 
 void refTracking(float goalAngle ) {
-  // long int goalPosition = positionCount + deltaRotation*ppr/360;
-  long int allowedTrackingError= ppr*ALLOWEDERROR/360;
+  long int allowedTrackingError= ppr*ALLOWEDERRORINNER/360;
   long int goalPositionCount= -(goalAngle*ppr/360);
+  analogWrite(SPEED_PIN, MIDSPEEDPWM);
   while (!(positionCount > goalPositionCount - allowedTrackingError && positionCount <= goalPositionCount + allowedTrackingError)) { 
     if (positionCount < goalPositionCount) {
-      digitalWrite(STOP_PIN, LOW);
       digitalWrite(CW_PIN, LOW);
       digitalWrite(CCW_PIN, HIGH);
     }
     if (positionCount > goalPositionCount) {
-      digitalWrite(STOP_PIN, LOW);
       digitalWrite(CCW_PIN, LOW);
       digitalWrite(CW_PIN, HIGH);
     }
@@ -213,7 +221,54 @@ void refTracking(float goalAngle ) {
   }
   digitalWrite(CW_PIN, LOW);
   digitalWrite(CCW_PIN, LOW);
-  digitalWrite(STOP_PIN, HIGH);
+}
+
+void refTrackingLoop(float goalAngle) {
+  long int allowedTrackingErrorLoop = ppr * ALLOWEDERROROUTER / 360;
+  long int goalPositionCount = -(goalAngle * ppr / 360);
+  refTracking(goalAngle);  // Initial move to goal
+  while (trackingEnabled) {  // Stay in loop as long as tracking is enabled
+    // Check for stop command to exit tracking loop
+    if (Serial.available() > 0) {
+      String input = Serial.readStringUntil('\n');
+      input.trim();
+      if (input == "stop") {
+        trackingEnabled = false;
+        break;
+      }
+    }
+
+    // Calculate error
+    int error = goalPositionCount - positionCount;
+    
+    // If within allowed error range, stop
+    if (abs(error) <= allowedTrackingErrorLoop) {
+      digitalWrite(CW_PIN, LOW);
+      digitalWrite(CCW_PIN, LOW);
+      analogWrite(SPEED_PIN, MINSPEEDPWM);  
+      delay(100); 
+      continue;    
+    }
+
+    // P controll
+    int pwmSpeed = constrain(map(abs(error) * Kp, 0, 180, MINSPEEDPWM, MAXSPEEDPWM), MINSPEEDPWM, MAXSPEEDPWM); 
+
+    if (error < 0) {  // Move clockwise
+      analogWrite(SPEED_PIN, pwmSpeed);
+      digitalWrite(CCW_PIN, LOW);
+      digitalWrite(CW_PIN, HIGH);
+    } else {           // Move counter-clockwise
+      analogWrite(SPEED_PIN, pwmSpeed);
+      digitalWrite(CW_PIN, LOW);
+      digitalWrite(CCW_PIN, HIGH);
+    }
+
+    delay(10);
+  }
+
+  digitalWrite(CW_PIN, LOW);
+  digitalWrite(CCW_PIN, LOW);
+  analogWrite(SPEED_PIN, MINSPEEDPWM);  // Set speed to 0
 }
 
 float wrapAngle(float angle) {
@@ -223,11 +278,11 @@ float wrapAngle(float angle) {
 }
 
 void returnToHome(){
+  trackingEnabled = false; 
   refTracking(0);
   digitalWrite(CW_PIN, LOW);
   digitalWrite(CCW_PIN, LOW);
-  digitalWrite(STOP_PIN, LOW);
   analogWrite(IN1, 0);
   analogWrite(IN3, 0);
-  //positionCount=0;
+  analogWrite(SPEED_PIN, MINSPEEDPWM);
 }
