@@ -29,9 +29,9 @@ len_origen_3 = sqrt(moter_1_y*moter_1_y + moter_1_x*moter_1_x);
 vector_angel_3 = atan2(moter_1_y, moter_1_y);
 
 
-b_min = @(theta) cond([cos(theta(1)+vector_angel_1), cos(theta(2)+vector_angel_2) 0;
-                         sin(theta(1)+vector_angel_1) sin(theta(2)+vector_angel_2) 1;
-                         sin(theta(1))*len_origen_1 sin(theta(2))*len_origen_2 sin(theta_3)*len_origen_3])
+b_min = @(theta) cond([sin(theta(1))*len_origen_1 sin(theta(2))*len_origen_2 sin(theta_3)*len_origen_3;
+                       cos(theta(1)+vector_angel_1), cos(theta(2)+vector_angel_2) 0;
+                       sin(theta(1)+vector_angel_1) sin(theta(2)+vector_angel_2) 1])
 
 tt0 = b_min([0,0])
 initial_guess = [0.3, 1.23];
@@ -42,9 +42,9 @@ minimum = fminsearch(b_min, initial_guess) %,options)
 theta_right = minimum(2)
 theta_left  = minimum(1)
 
-B = [cos(theta_right+vector_angel_1), cos(theta_left+vector_angel_2) 0;
-     sin(theta_right+vector_angel_1) sin(theta_left+vector_angel_2) 1;
-     sin(theta_right)*len_origen_1 sin(theta_left)*len_origen_2 sin(theta_3)*len_origen_3]
+B = [sin(theta_right)*len_origen_1 sin(theta_left)*len_origen_2 sin(theta_3)*len_origen_3;
+     cos(theta_right+vector_angel_1), cos(theta_left+vector_angel_2) 0;
+     sin(theta_right+vector_angel_1) sin(theta_left+vector_angel_2) 1;]
 
 con = cond(B)
 
