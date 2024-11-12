@@ -10,7 +10,7 @@ I = (1/12)*m*len*len;
 
 A = [bx/m 0 0;
      0 by/m 0;
-     0 0 br/m];
+     0 0 br/m]
 
 %theta_1 = 1;
 moter_1_x = -2;
@@ -54,13 +54,13 @@ B = [sin(theta_left)*len_origen_1  , sin(theta_right)*len_origen_2  , sin(theta_
 con = cond(B)
 
 
-Q = [80 0 0;
-     0 20 0;
-     0 0 20];
+Q = [100 0 0;
+     0 100 0;
+     0 0 100];
 
-R = [80 0 0;
-     0 80 0;
-     0 0 80];
+R = [1 0 0;
+     0 1 0;
+     0 0 1];
 
 [K,S,P] = lqr(A,B,Q,R)
 
