@@ -53,8 +53,7 @@ void setup() {
   digitalWrite(CW_PIN, LOW);
   digitalWrite(CCW_PIN, LOW);
   analogWrite(SPEED_PIN, MINSPEEDPWM);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN), updatePosition, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN), updatePosition, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN), updatePosition, RISING);
 
   printMenu();
 }
@@ -194,7 +193,7 @@ void updatePosition() {
   int bState = digitalRead(ENCODER_B_PIN);
 
   if (aState != lastAState) {
-    if (aState == HIGH && bState == LOW || aState == LOW && bState == HIGH){
+    if (bState == LOW){
       positionCount--; 
     } else {
       positionCount++;
