@@ -29,9 +29,11 @@ cot = min_b(thuster_angle)
 
 thuster_angle = [thuster_angle, 0]
 
-Q = [100 0   0   ;
-     0   100 0   ;
-     0   0   100];
+Q = [0.1 0 0   ;
+     0 0.2 0   ;
+     0 0 100];
+Q = [2 0 0 ;0 2 0 ;0 0 2];
+%Q = Q*5
 
 R = [1 0 0;
      0 1 0;
