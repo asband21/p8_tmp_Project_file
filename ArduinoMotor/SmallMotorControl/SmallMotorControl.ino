@@ -10,7 +10,7 @@
 #define CCW_PIN 6 // Counter-clockwise motor pin
 
 #define ALLOWEDERRORINNER 0.05
-#define ALLOWEDERROROUTER 10 
+#define ALLOWEDERROROUTER 1
 
 //Angular velocity PWMS
 #define MAXSPEEDPWM 229
