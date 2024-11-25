@@ -1,6 +1,6 @@
 //SWagged out  1.3kohm and 220uF RC FILTER
-#define BWDMAXSPEEDPWM 46                  //REVERSE RANGE 79-46=33
-#define FWDMAXSPEEDPWM 255                 // FORWARD RANGE 255-158=97
+#define BWDMAXSPEEDPWM 46
+#define FWDMAXSPEEDPWM 255
 
 #define TOPTOBOTFWDCUT 158 //ON TO OFF FORWARD CUT OUT
 #define BOTTOTOPFWDCUT 168 //167   //OFF TO ON FORWARD CUT OUT
@@ -15,7 +15,7 @@
 
 #define RELAYDELAY 500
 
-#define FWDOFFSETCORRECT 0.000001 //DISABLED
+#define FWDOFFSETCORRECT 0.000001
 
 
 void setup() {
@@ -75,7 +75,6 @@ void setRotation(int rpm){
   }
   if(rpm==0){
     analogWrite(pwmPin, STOPPWM);
-    Serial.println("Stop");
   }
 }
 
