@@ -1,7 +1,7 @@
 function [K, B, thuster_angle] = re_LQR()
 
 %loading, and model parameters
-[moter_left, moter_right, moter_bow, A ,mass, boat_dimensions, friction, inertia, wind_gain] = get_parameters()
+[moter_left, moter_right, moter_bow, A ,mass, boat_dimensions, friction, inertia, wind_gain] = get_parameters();
 
 %x_d = A*x + B*u;
 %x = [x, y , angle]
@@ -22,22 +22,22 @@ initial_guess = [0.3, 1.23];
 %show a graph over the optimization uncommon the following line.
 %options = optimset('PlotFcns',@optimplotfval);
 
-thuster_angle = fminsearch(min_b, initial_guess) %,options)
+thuster_angle = fminsearch(min_b, initial_guess); %,options)
 
-B   = B_fuc(thuster_angle)
-cot = min_b(thuster_angle)
+B   = B_fuc(thuster_angle);
+cot = min_b(thuster_angle);
 
-thuster_angle = [thuster_angle, 0]
+thuster_angle = [thuster_angle, 0];
 
 Q = [2 0 0   ;
      0 10 0  ;
      0 0 20];
 %Q = [2 0 0 ;0 2 0 ;0 0 2];
-Q = Q*10
+Q = Q*4;
 
 R = [1 0 0;
      0 1 0;
      0 0 1];
 
-[K,S,P] = lqr(A,B,Q,R)
+[K,S,P] = lqr(A,B,Q,R);
 end
