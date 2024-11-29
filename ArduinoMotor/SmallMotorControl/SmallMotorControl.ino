@@ -27,7 +27,7 @@ bool trackingEnabled = false;
 
 volatile long positionCount = 0;
 int lastAState = LOW;
-const float ppr = 10347;  // Pulses per revolution of encoder
+const float ppr = 2587;  // Pulses per revolution of encoder 10347og
 
 float goalAngle = 0;
 const float Kp = 0.5;  // Proportional gain for speed control
@@ -119,7 +119,6 @@ void loop() {
       analogWrite(IN3, 255 - pwmValue);    // Motor 2 increasing
       delay(50);
     }
-
     // Check for "exit" command to leave auto mode
     if (Serial.available() > 0) {
       String input = Serial.readStringUntil('\n');
