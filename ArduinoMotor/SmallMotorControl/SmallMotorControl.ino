@@ -4,10 +4,10 @@
 #define IN3 8  // PWM for Motor 2
 #define IN4 10  // Direction for Motor 2
 #define SPEED_PIN  11 //Pin for angle velocity
-#define ENCODER_A_PIN 2  // Channel A
-#define ENCODER_B_PIN 3  // Channel B
-#define CW_PIN 5 // Clockwise motor pin
-#define CCW_PIN 6 // Counter-clockwise motor pin
+#define ENCODER_A_PIN 22  // Channel A
+#define ENCODER_B_PIN 23  // Channel B
+#define CW_PIN 32 // Clockwise motor pin
+#define CCW_PIN 33 // Counter-clockwise motor pin
 
 #define ALLOWEDERRORINNER 0.05
 #define ALLOWEDERROROUTER 10 
@@ -53,7 +53,8 @@ void setup() {
   digitalWrite(CW_PIN, LOW);
   digitalWrite(CCW_PIN, LOW);
   analogWrite(SPEED_PIN, MINSPEEDPWM);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN), updatePosition, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN), updatePosition, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN), updatePosition, CHANGE);
 
   printMenu();
 }
@@ -186,21 +187,19 @@ float getDeltaRotation(float currentAngle, float goalAngle) { //Chatgpt did this
   return delta;
 }
 
-
 void updatePosition() {
   int aState = digitalRead(ENCODER_A_PIN);
   int bState = digitalRead(ENCODER_B_PIN);
 
   if (aState != lastAState) {
-    if (bState == LOW){
-      positionCount--; 
+    if (aState == HIGH && bState == LOW || aState == LOW && bState == HIGH) {
+      positionCount++; // Clockwise
     } else {
-      positionCount++;
+      positionCount--; // Counter-clockwise
     }
   }
   lastAState = aState;
 }
-
 
 void refTracking(float goalAngle ) {
   long int allowedTrackingError= ppr*ALLOWEDERRORINNER/360;
