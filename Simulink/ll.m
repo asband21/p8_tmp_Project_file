@@ -4,8 +4,8 @@ clear all; close all; clc;
 
 %% System Parameters
 m = 1;          % Mass (kg)
-b = 2;          % Known damping coefficient (N·s/m)
-bc_true = 5;    % True unknown damping coefficient (N·s/m)
+b = -2;          % Known damping coefficient (N·s/m)
+bc_true = -5;    % True unknown damping coefficient (N·s/m)
 
 %% Time Parameters
 dt = 0.01;      % Time step (s)
@@ -16,7 +16,7 @@ t = 0:dt:T-dt;  % Time vector
 %% Input (Control Force)
 u = zeros(1, N);          % Zero input force
 u(100:200) = 10;          % Apply a force between t=1s and t=2s
-
+u(500:700) = -20;
 %% Process and Measurement Noise
 Q = diag([1e-5, 1e-5, 1e-7]);  % Process noise covariance
 R = 1e-2;                      % Measurement noise covariance
@@ -33,7 +33,7 @@ for k = 1:N-1
     
     % State derivatives
     dp = p_d;
-    dp_d = (-b*p_d - bc*p_d)/m + u(k)/m;
+    dp_d = (b*p_d + bc*p_d)/m + u(k)/m;
     dbc = 0;  % bc is constant
     
     % Update states
@@ -45,7 +45,7 @@ y = x_true(1,:) + sqrt(R)*randn(1, N);
 
 %% Extended Kalman Filter Initialization
 x_est = zeros(3, N);        % Estimated state vector [p; p_d; bc]
-x_est(:,1) = [0; 0; 0];     % Initial estimate
+x_est(:,1) = [0; 0; 0];     % Iu(100:200) = 10;nitial estimate
 P = eye(3);                 % Initial estimate error covariance
 
 %% EKF Implementation
