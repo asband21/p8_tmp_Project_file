@@ -6,7 +6,7 @@ function [x_hat,P] = kalman_filter_sim_l(time, olde_time, P_m1, Xp_m1,u_m1,y)
     m = 1500;
     
     A = [0, 1, 0 ;
-         0, b/m, 1/m;
+         0, (b+bc)/m, 0;
          0, 0,  0];
     
     B = [0, 0, 0;
