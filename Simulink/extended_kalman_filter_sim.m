@@ -1,28 +1,39 @@
 function [x_hat,P] = extended_kalman_filter_sim(time, olde_time, P_m1, Xp_m1, u_m1, y)
     td = time - olde_time;
-    b = -800;
-    m = 1500;
-    bc = Xp_m1(3);
+        m = 1500; b = -1000;
+    Q_m1 = diag([1e-5, 1e-5, 1e-5]);
+    R = diag([1e-2, 1e-3, 1e-3]);
     
-    f = @(xp_m1, u_m1,w) = eye(size(A))+[0, 1, 0 ;0, (b+bc)/m, 0;0, 0,  0]*xp_m1*td + [0, 0, 0;0, 1/m, 0;0, 0, 0]*td*u_m1 + eye(size(A))*w*td;
-    F_m1 = @(Xp_m1)  [0, 1,   0  ;
-                      0, 1/m, 1/m;
-                      0, 1,   0  ] * Xp_m1;
-    L_m1 = @(w) = [1, 0, 0;
-                   0, 1, 0;
-                   0, 0, 1]*w
-    H_f = @(Xp_m1)[1, 0, 0; % C matrix
-                0, 0, 0;
-                0, 0, 0]*Xp_m1;
+    h = @(Xp_m1) [Xp_m1(1); Xp_m1(2); 0];
+    f = @(xp_m1, u_m1) xp_m1 + [0, 1, 0 ;0, (b+Xp_m1(1))/m, 0; 0, 0, 0]*xp_m1*td + [0, 1/m, 0]*td*u_m1;% + [0;0;Xp_m1(3)];
+    %f = @(xp_m1, u_m1) xp_m1 + [0, 1, 0; 0, (b+bc)/m, 0; 0, 0, 1]*xp_m1*td + [0, 1/m, 0]*td*u_m1;
+    %                  0, bc/m, b/m;
+    %                  0, 0, 0 ]*diag(Xp_m1)% to Jacobian of the system state.
+    F_m1 = @(Xp_m1) [1, td, 0;
+                     0, 1+td*Xp_m1(3)/m, td/m;
+                     0, 0, 1];
+                      
+    L_m1 = @(w) [1, 0, 0;
+                 0, 1, 0;
+                 0, 0, 1];
+    H_f = @(Xp_m1) [1, 0, 0; % C matrix
+                    0, 1, 1/m;
+                    0, 0, 0];
+    
+    M_f = @(Xp_m1) [1, 0, 0;
+                    0, 1, 0;
+                    0, 0, 1];
     H = H_f(Xp_m1);
     
-    I = eye(3)
-    Pm = F_m1(Xp_m1)*P_m1*F_m1(Xp_m1)'+L_m1(Xp_m1)*Q_m1*L_m1(Xp_m1)'
-    Xm = f(Xp_m1,u_m1,0)
+    I = eye(3);
+    Pm = F_m1(Xp_m1)*P_m1*F_m1(Xp_m1)'+L_m1(Xp_m1)*Q_m1*L_m1(Xp_m1)';
+    Xm = f(Xp_m1,u_m1);
 
     H = H_f(Xp_m1);
-    K  = Pm*H'*inv(H*Pm*H'+R)
-    Xp = Xm + K*(y-H*Xm)
-    Pp = (I - K*H)*Pm*(I - K*H)' + K*R*K'
-
+    M = M_f([1;1;1]);
+    K = Pm * H' / (H * Pm * H' + M * R * M');
+    Xp = Xm + K*(y-h(Xp_m1));
+    Pp = (I - K*H)*Pm*(I - K*H)' + K*R*K';
+    P = Pp;
+    x_hat = Xp;
 end

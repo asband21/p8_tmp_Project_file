@@ -4,12 +4,12 @@ clear all; close all; clc;
 
 %% System Parameters
 m = 1;          % Mass (kg)
-b = -2;          % Known damping coefficient (N·s/m)
-bc_true = -5;    % True unknown damping coefficient (N·s/m)
+b = 2;          % Known damping coefficient (N·s/m)
+bc_true = 5;    % True unknown damping coefficient (N·s/m)
 
 %% Time Parameters
 dt = 0.01;      % Time step (s)
-T = 10;         % Total simulation time (s)
+T = 100;         % Total simulation time (s)
 N = T/dt;       % Number of time steps
 t = 0:dt:T-dt;  % Time vector
 
@@ -17,6 +17,7 @@ t = 0:dt:T-dt;  % Time vector
 u = zeros(1, N);          % Zero input force
 u(100:200) = 10;          % Apply a force between t=1s and t=2s
 u(500:700) = -20;
+u(1200:1600) = 10;
 %% Process and Measurement Noise
 Q = diag([1e-5, 1e-5, 1e-7]);  % Process noise covariance
 R = 1e-2;                      % Measurement noise covariance
@@ -33,7 +34,7 @@ for k = 1:N-1
     
     % State derivatives
     dp = p_d;
-    dp_d = (b*p_d + bc*p_d)/m + u(k)/m;
+    dp_d = (-b*p_d - bc*p_d)/m + u(k)/m;
     dbc = 0;  % bc is constant
     
     % Update states

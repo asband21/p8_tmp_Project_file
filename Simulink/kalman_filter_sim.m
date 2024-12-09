@@ -38,8 +38,8 @@ end
 
 function [x_1] = dynamik(time, olde_time, x,u)
     td = time - olde_time; %time delta
-    m = 1500; b = -1000; bc = -200;
-    A = [0, 1, 0 ; 0, (b+bc)/m, 0 ;0, 0,    0];
+    m = 1500; %b = -1000;
+    A = [0, 1, 0 ; 0, x(3)/m, 0 ;0, 0,    0];
         B = [0, 0, 0; 0, 1/m, 0; 0, 0, 0];
     x_1 = A*x*td+B*u*td+x;
 end
@@ -52,18 +52,21 @@ ts = 0.1 %time step size.
 time = ts:ts:N*ts;
 
 x = zeros(3, N);        % True system dynamics.
-x(:, 1) = [0; 1; -200];    % Initial state
+x(:, 1) = [0; -10; -1000];    % Initial state
 x_hat = zeros(3, N);
-x_hat(:, 1) = [0; 1; 0];
+x_hat(:, 1) = [0; -10; -900];
 p_hat = eye(3) * 1e-3;  % Small positive definite matrix
 
-u = zeros(3, N);        % Zero input force
-u(2,500:600) = -500; 
+u = zeros(3, N);   % Zero input force
+for i = 500:N; u(2,i) = sin(i*i*0.00006)*100000; end
+u(2,100:200) = 5000;
+u(2,400:750) = -700;
 
 for i = 2:N
     x(:,i)      = dynamik(time(i), time(i-1), x(:,i-1), u(:,i-1)); % True system dynamics.
-    noise_meserment = x(:,i-1) + [1,0,0]*random('Normal', 0, 1, [3, 1]);
-    [x_hat(:,i), p_hat]  = kalman_filter_sim_l(time(i), time(i-1), p_hat ,x_hat(:,i-1), u(:,i-1), noise_meserment); % Estes Medt state.
+    noise_meserment = x(:,i-1) + [1,1,0]*random('Normal', 0, 1, [3, 1])*1;
+    %[x_hat(:,i), p_hat] = kalman_filter_sim_l(time(i), time(i-1), p_hat ,x_hat(:,i-1), u(:,i-1), noise_meserment); % Estes Medt state.
+    [x_hat(:,i), p_hat] = extended_kalman_filter_sim(time(i), time(i-1), p_hat ,x_hat(:,i-1), u(:,i-1), noise_meserment);
 end
 
 
