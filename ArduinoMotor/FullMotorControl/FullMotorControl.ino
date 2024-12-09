@@ -1,5 +1,6 @@
 #include <DS1804.h>
 
+//USING DIGITAL POTENTIOMETER:
 #define BWDMAXSPEEDPWM 13                 
 #define FWDMAXSPEEDPWM 97                 
 
@@ -9,6 +10,35 @@
 #define BOTTOTOPBWDCUT 25//ON TO OFF BWD CUT OUT
 #define RELAYDELAY 500
 #define STOPPWM 45
+//digital potentiometer pins
+#define CSPIN 53
+#define INCPIN 49
+#define UDPIN 51
+
+DS1804 digipot = DS1804(CSPIN, INCPIN, UDPIN, DS1804_HUNDRED); //Digital potentiometer for front motor
+
+unsigned long rateLimit = 1000;	// time in ms required between changes in digi pot
+long lastLockedAt = -1*rateLimit;
+byte lastWiperPosition;
+
+// END OF DIGITAL POTENTIOMETER
+
+/*
+//Using RC filter  1.3kohm and 220uF
+#define BWDMAXSPEEDPWM 46                  //REVERSE RANGE 79-46=33
+#define FWDMAXSPEEDPWM 255                 // FORWARD RANGE 255-158=97
+
+#define TOPTOBOTFWDCUT 158 //ON TO OFF FORWARD CUT OUT
+#define BOTTOTOPFWDCUT 168 //167   //OFF TO ON FORWARD CUT OUT
+#define TOPTOBOTBWDCUT 77  //78 //OFF TO ON BWD CUT OUT
+#define BOTTOTOPBWDCUT 79 //ON TO OFF BWD CUT OUT
+#define RELAYDELAY 500
+#define STOPPWM 128
+
+#define FWDOFFSETCORRECT 0.000001 //DISABLED
+
+// END OF RC FILTER
+*/
 
 #define RMOTORPROP 13  // PWM for Motor 1       
 #define LMOTORPROP 8  // PWM for Motor 2
@@ -33,12 +63,6 @@
 #define MIDSPEEDPWM 140
 #define MINSPEEDPWM 26
 
-//digital potentiometer pins
-#define CSPIN 53
-#define INCPIN 49
-#define UDPIN 51
-
-DS1804 digipot = DS1804(CSPIN, INCPIN, UDPIN, DS1804_HUNDRED); //Digital potentiometer for front motor
 
 bool trackingEnabled = false;
 volatile bool updateGoals = false;  // NEW ANGLE FLAG
@@ -46,9 +70,8 @@ volatile bool updateGoals = false;  // NEW ANGLE FLAG
 
 volatile long positionCountR = 0;
 volatile long positionCountL = 0;
-int lastAStateR = LOW;
-int lastAStateL = LOW;
-const float ppr = 10347;  // Pulses per revolution of encoder 10347og    2587
+
+const float ppr = 5173;  // Pulses per revolution of encoder 10347og    2587
 float goalAngleR = 0;
 float goalAngleL = 0;
 const float Kp = 1.3;  // Proportional gain for speed control
@@ -58,7 +81,6 @@ long int errorEncoderTrackingINNER = ppr * ALLOWEDERRORINNER / 360;
 
   long int goalPositionCountR=0;
   long int goalPositionCountL=0;
-
 
 
   int loope = 0;
@@ -101,11 +123,11 @@ void setup() {
   analogWrite(SPEED_PIN_ESCON_R, MINSPEEDPWM);
   analogWrite(SPEED_PIN_ESCON_L, MINSPEEDPWM);
 
+  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN_R), updatePositionR, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN_L), updatePositionL, RISING);
 
-  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN_R), updatePositionR, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN_R), updatePositionR, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN_L), updatePositionL, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN_L), updatePositionL, CHANGE);
+//digipot
+ lastWiperPosition = digipot.getWiperPosition();
 
 
 // TESTER INTERRUPT
@@ -116,6 +138,21 @@ void setup() {
 }
 
 void loop() {
+
+  // if ( digipot.isLocked() ) {
+	// 	// unlock if enough time has passed		
+	// 	if ( ( millis() - lastLockedAt ) > rateLimit ) {
+	// 		digipot.unlock();
+	// 	}
+	// }
+	// else {
+	// // detect change and lock		
+	// 	if ( lastWiperPosition != digipot.getWiperPosition() ) {
+	// 		lastWiperPosition = digipot.getWiperPosition();
+	// 		digipot.lock();
+	// 		lastLockedAt = millis();
+	// 	}
+	// }
 
   // CHECK SERIAL HERE INSTEAD OF FLAG
   if (updateGoals) {
@@ -147,11 +184,15 @@ void loop() {
   int errorR = goalPositionCountR - positionCountR;
   int errorL = goalPositionCountL - positionCountL;
 
-if(loope==200){
+if(loope==100){
   Serial.println(":::");
   Serial.println(errorR*360/ppr);
   Serial.println(goalPositionCountR*360/ppr);
   Serial.println(positionCountR*360/ppr);
+
+  // Serial.println(errorR);
+  // Serial.println(goalPositionCountR);
+  // Serial.println(positionCountR);
   loope=0;
   }
 
@@ -177,6 +218,27 @@ if(loope==200){
   delay(10);  // Small delay to stabilize
 }
 
+
+void setPropSpeedFront(char direction, int throttle){
+  if(throttle>100)
+    throttle=100;
+  if(throttle<0)
+    throttle=0;
+
+  if(throttle==0 || direction=='s') //STOP
+    stopFront();
+  else{
+    if(direction=='b')//backwards
+      movebwd(throttle);
+    if(direction=='f')//forward
+      movefwd(throttle);
+  }
+}
+
+void stopFront(){
+  digipot.setWiperPosition(STOPPWM);
+}
+
 void movefwd(int throttle){
   int digi_value= map(throttle, 0, 100, TOPTOBOTFWDCUT, FWDMAXSPEEDPWM);
   if(digi_value<BOTTOTOPFWDCUT){
@@ -195,6 +257,31 @@ void movebwd(int throttle){
   digipot.setWiperPosition(digi_value);
 }
 
+/*
+void movefwd(int throttle){
+  uint8_t pwm_value= map(throttle, 0, 100, TOPTOBOTFWDCUT, FWDMAXSPEEDPWM);
+  if(pwm_value<BOTTOTOPFWDCUT){
+    analogWrite(pwmPin, BOTTOTOPFWDCUT);
+    delay(RELAYDELAY);
+  }
+  analogWrite(pwmPin, pwm_value);
+    Serial.println("Forward:");
+    Serial.println(pwm_value);
+}
+
+void movebwd(int rpm){
+  uint8_t pwm_value= map(rpm, 0, -MAXROTATIONBWD, TOPTOBOTBWDCUT, BWDMAXSPEEDPWM);
+  if(pwm_value>BOTTOTOPBWDCUT){
+    analogWrite(pwmPin, BOTTOTOPBWDCUT);
+    delay(RELAYDELAY);
+  }
+  analogWrite(pwmPin, pwm_value);
+    Serial.println("Backward:");
+    Serial.println(pwm_value);
+}
+
+*/
+
 void setPropSpeedRear(char motor,int throttle){
   if(throttle>100)
     throttle=100;
@@ -208,22 +295,6 @@ void setPropSpeedRear(char motor,int throttle){
     analogWrite(LMOTORPROP, pwm);
 }
 
-void setPropSpeedFront(char direction, int throttle){
-  if(throttle>100)
-    throttle=100;
-  if(throttle<0)
-    throttle=0;
-
-  if(throttle==0 || direction=='s') //STOP
-    digipot.setWiperPosition(STOPPWM);
-  else{
-    if(direction=='b')//backwards
-      movebwd(throttle);
-    if(direction=='f')//forward
-      movefwd(throttle);
-  }
-}
-
 float getDeltaRotation(float currentAngle, float goalAngle) { //Chatgpt did this one but if you want you can debug yours
   float delta = goalAngle - currentAngle;
   if (delta > 180) {
@@ -234,33 +305,22 @@ float getDeltaRotation(float currentAngle, float goalAngle) { //Chatgpt did this
   return delta;
 }
 
-
 void updatePositionR() {
-  int aState = digitalRead(ENCODER_A_PIN_R);
   int bState = digitalRead(ENCODER_B_PIN_R);
-
-  if (aState != lastAStateR) {
-    if (aState == HIGH && bState == LOW || aState == LOW && bState == HIGH) {
+    if (bState == LOW){
       positionCountR++; // Clockwise
     } else {
       positionCountR--; // Counter-clockwise
     }
-  }
-  lastAStateR = aState;
 }
 
 void updatePositionL() {
-  int aState = digitalRead(ENCODER_A_PIN_L);
   int bState = digitalRead(ENCODER_B_PIN_L);
-
-  if (aState != lastAStateL) {
-    if (aState == HIGH && bState == LOW || aState == LOW && bState == HIGH) {
+    if (bState == LOW){
       positionCountL++; // Clockwise
     } else {
       positionCountL--; // Counter-clockwise
     }
-  }
-  lastAStateL = aState;
 }
 
 void updateGoalAngles() {
@@ -319,13 +379,6 @@ void returnToHome(){
   //gotoAngle(0);
 
 }
-
-
-
-
-
-
-
 
 
 
