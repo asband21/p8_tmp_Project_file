@@ -54,7 +54,7 @@ time = ts:ts:N*ts;
 x = zeros(3, N);        % True system dynamics.
 x(:, 1) = [0; -10; -1000];    % Initial state
 x_hat = zeros(3, N);
-x_hat(:, 1) = [0; -10; -900];
+x_hat(:, 1) = [0; -10; 0];
 p_hat = eye(3) * 1e-3;  % Small positive definite matrix
 
 u = zeros(3, N);   % Zero input force
@@ -64,7 +64,7 @@ u(2,400:750) = -700;
 
 for i = 2:N
     x(:,i)      = dynamik(time(i), time(i-1), x(:,i-1), u(:,i-1)); % True system dynamics.
-    noise_meserment = x(:,i-1) + [1,1,0]*random('Normal', 0, 1, [3, 1])*1;
+    noise_meserment = x(:,i-1) + [1,0,0]*random('Normal', 0, 1, [3, 1])*1;
     %[x_hat(:,i), p_hat] = kalman_filter_sim_l(time(i), time(i-1), p_hat ,x_hat(:,i-1), u(:,i-1), noise_meserment); % Estes Medt state.
     [x_hat(:,i), p_hat] = extended_kalman_filter_sim(time(i), time(i-1), p_hat ,x_hat(:,i-1), u(:,i-1), noise_meserment);
 end
@@ -86,7 +86,7 @@ legend('True velocity', 'Estimated velocity');
 title('velocity Estimation');
 
 subplot(3,1,3);
-plot(time, x(3, :), 'b', time, x_hat(3, :), 'r');
+plot(time, x(3, :), 'b', time, x_hat(3, :)*1000, 'r');
 xlabel('Time (s)');
 ylabel('Drag Coefficient (b_c)');
 legend('True b_c', 'Estimated b_c');
