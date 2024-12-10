@@ -1,4 +1,4 @@
-#include <DS1804.h>
+//#include <DS1804.h>
 
 /*
 //USING DIGITAL POTENTIOMETER: 
@@ -51,8 +51,8 @@ byte digipotUpdatePosition = 45;
 #define SPEED_PIN_ESCON_L  12 //Pin for angle velocity
 #define ENCODER_A_PIN_R 20  // Channel A left motor
 #define ENCODER_B_PIN_R 21  // Channel B left motor
-#define ENCODER_A_PIN_L 24  // Channel A right motor
-#define ENCODER_B_PIN_L 25  // Channel B right motor
+#define ENCODER_A_PIN_L 18  // Channel A right motor
+#define ENCODER_B_PIN_L 19  // Channel B right motor
 
 #define CW_PIN_R 32 // Clockwise motor pin right motor
 #define CCW_PIN_R 33 // Counter-clockwise motor pin right motor
@@ -138,8 +138,8 @@ void setup() {
   analogWrite(PWM_PIN_FMOTOR, STOPPWM);
 
 // TESTER INTERRUPT
-  pinMode(19, INPUT_PULLUP); 
-  attachInterrupt(digitalPinToInterrupt(19), updateGoalAngles, FALLING);
+  pinMode(2, INPUT_PULLUP); 
+  attachInterrupt(digitalPinToInterrupt(2), updateGoalAngles, FALLING);
   randomSeed(analogRead(0));  // Seed for randomness (only for testing)
 
 }
@@ -178,6 +178,8 @@ void loop() {
 
 if(loope==100){
   Serial.println(":::");
+  Serial.println(directionF);
+  Serial.println(throttleR);
   Serial.println(errorR*360/ppr);
   Serial.println(goalPositionCountR*360/ppr);
   Serial.println(positionCountR*360/ppr);
@@ -203,7 +205,7 @@ if(loope==100){
   loope++;
   delay(10);  // Small delay to stabilize
 }
-
+/*
 bool setWiperPositionRateLimited(byte position) {
   if (digipot.isLocked()) {
     digipotNeedsUpdate = true;
@@ -219,7 +221,7 @@ bool setWiperPositionRateLimited(byte position) {
   lastLockedAt = millis();
   return true;
 }
-
+*/
 
 void setPropSpeedFront(char direction, int throttle){
   if(throttle>100)
@@ -244,7 +246,7 @@ void stopFront(){
 void movefwd(int throttle){
   int digi_value= map(throttle, 0, 100, TOPTOBOTFWDCUT, FWDMAXSPEEDPWM);
   if(digi_value<BOTTOTOPFWDCUT){
-    analogWrite(PWM_PIN_FMOTOR, BOTTOTOPFWDCUT)
+    analogWrite(PWM_PIN_FMOTOR, BOTTOTOPFWDCUT);
     delay(RELAYDELAY); //Might be a dangerous delay
   }
     analogWrite(PWM_PIN_FMOTOR, digi_value);
@@ -253,7 +255,7 @@ void movefwd(int throttle){
 void movebwd(int throttle){
   int digi_value= map(throttle, 0, 100, TOPTOBOTBWDCUT, BWDMAXSPEEDPWM);
   if(digi_value>BOTTOTOPBWDCUT){
-    analogWrite(PWM_PIN_FMOTOR, BOTTOTOPBWDCUT)
+    analogWrite(PWM_PIN_FMOTOR, BOTTOTOPBWDCUT);
     delay(RELAYDELAY);   //Might be a dangerous delay
   }
   analogWrite(PWM_PIN_FMOTOR, digi_value);

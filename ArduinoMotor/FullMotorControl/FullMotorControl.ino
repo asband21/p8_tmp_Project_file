@@ -255,7 +255,7 @@ void movefwd(int throttle){
   if(digi_value<BOTTOTOPFWDCUT){
     if(setWiperPositionRateLimited(BOTTOTOPFWDCUT)){
       delay(RELAYDELAY);
-      digitpot.setWiperPosition(digi_value);
+      digipot.setWiperPosition(digi_value);
     }
   }
     setWiperPositionRateLimited(digi_value);
@@ -266,7 +266,7 @@ void movebwd(int throttle){
   if(digi_value>BOTTOTOPBWDCUT){
     if(setWiperPositionRateLimited(BOTTOTOPBWDCUT)){
       delay(RELAYDELAY);
-      digitpot.setWiperPosition(digi_value);
+      digipot.setWiperPosition(digi_value);
     }
   }
   setWiperPositionRateLimited(digi_value);
