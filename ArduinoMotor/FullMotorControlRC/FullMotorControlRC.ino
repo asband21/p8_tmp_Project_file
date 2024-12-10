@@ -1,6 +1,7 @@
 #include <DS1804.h>
 
-//USING DIGITAL POTENTIOMETER:
+/*
+//USING DIGITAL POTENTIOMETER: 
 #define BWDMAXSPEEDPWM 13                 
 #define FWDMAXSPEEDPWM 97                 
 
@@ -24,8 +25,8 @@ bool digipotNeedsUpdate = true;
 byte digipotUpdatePosition = 45;
 
 // END OF DIGITAL POTENTIOMETER
+*/
 
-/*
 //Using RC filter  1.3kohm and 220uF
 #define BWDMAXSPEEDPWM 46                  //REVERSE RANGE 79-46=33
 #define FWDMAXSPEEDPWM 255                 // FORWARD RANGE 255-158=97
@@ -39,8 +40,10 @@ byte digipotUpdatePosition = 45;
 
 #define FWDOFFSETCORRECT 0.000001 //DISABLED
 
+#define PWM_PIN_FMOTOR 3
+
 // END OF RC FILTER
-*/
+
 
 #define RMOTORPROP 13  // PWM for Motor 1       
 #define LMOTORPROP 8  // PWM for Motor 2
@@ -76,7 +79,7 @@ volatile long positionCountL = 0;
 const float ppr = 5173;  // Pulses per revolution of encoder 10347og    2587
 float goalAngleR = 0;
 float goalAngleL = 0;
-const float Kp = 1.3;  // Proportional gain for speed control
+const float Kp = 1.3;  
 
 long int errorEncoderTrackingOuter = ppr * ALLOWEDERROROUTER / 360;
 long int errorEncoderTrackingINNER = ppr * ALLOWEDERRORINNER / 360;
@@ -98,8 +101,8 @@ long int errorEncoderTrackingINNER = ppr * ALLOWEDERRORINNER / 360;
 void setup() {
   Serial.begin(115200);
 
-  digipot.setToZero();
-  digipot.setWiperPosition(STOPPWM);
+  //digipot.setToZero();
+  //digipot.setWiperPosition(STOPPWM);
 
   //Right motor
   pinMode(RMOTORPROP, OUTPUT);
@@ -129,8 +132,10 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN_L), updatePositionL, RISING);
 
 //digipot
- lastWiperPosition = digipot.getWiperPosition();
-
+ //lastWiperPosition = digipot.getWiperPosition();
+//RC
+  pinMode(PWM_PIN_FMOTOR, OUTPUT);
+  analogWrite(PWM_PIN_FMOTOR, STOPPWM);
 
 // TESTER INTERRUPT
   pinMode(19, INPUT_PULLUP); 
@@ -140,14 +145,6 @@ void setup() {
 }
 
 void loop() {
-
-  if ( digipot.isLocked() ) {
-    if (millis() - lastLockedAt > rateLimit) {
-      digipot.unlock();
-      if(digipotNeedsUpdate)
-        setWiperPositionRateLimited(digipotUpdatePosition);
-    }
-  }
 
   // CHECK SERIAL HERE INSTEAD OF FLAG
   if (updateGoals) {
@@ -190,12 +187,6 @@ if(loope==100){
   // Serial.println(positionCountR);
   loope=0;
   }
-
-  // CHECK FRONT MOTOR ROTATION
-  // PUT A RATE LIMIT AND A FLAG TO KNOW IF THE LAST VALUE HAS BEEN CHANGED OR NOT MAYBE RATE LIMIT OF 1 SECOND
-  // DIGI POTENTIOMETER KINDA SUCKS
-  // MIGHT STILL GO TO LOW PASS FILTER
-
 
   // Right Motor Control
   if (abs(errorR) > errorEncoderTrackingINNER) { //WE CAN MAKE A FLAG TO ONLY GO HERE IF WE GET OUTSID THE ALLOWEDERROROUTER
@@ -247,29 +238,25 @@ void setPropSpeedFront(char direction, int throttle){
 }
 
 void stopFront(){
-  setWiperPositionRateLimited(STOPPWM);
+  analogWrite(PWM_PIN_FMOTOR, STOPPWM);
 }
 
 void movefwd(int throttle){
   int digi_value= map(throttle, 0, 100, TOPTOBOTFWDCUT, FWDMAXSPEEDPWM);
   if(digi_value<BOTTOTOPFWDCUT){
-    if(setWiperPositionRateLimited(BOTTOTOPFWDCUT)){
-      delay(RELAYDELAY);
-      digitpot.setWiperPosition(digi_value);
-    }
+    analogWrite(PWM_PIN_FMOTOR, BOTTOTOPFWDCUT)
+    delay(RELAYDELAY); //Might be a dangerous delay
   }
-    setWiperPositionRateLimited(digi_value);
+    analogWrite(PWM_PIN_FMOTOR, digi_value);
 }
 
 void movebwd(int throttle){
   int digi_value= map(throttle, 0, 100, TOPTOBOTBWDCUT, BWDMAXSPEEDPWM);
   if(digi_value>BOTTOTOPBWDCUT){
-    if(setWiperPositionRateLimited(BOTTOTOPBWDCUT)){
-      delay(RELAYDELAY);
-      digitpot.setWiperPosition(digi_value);
-    }
+    analogWrite(PWM_PIN_FMOTOR, BOTTOTOPBWDCUT)
+    delay(RELAYDELAY);   //Might be a dangerous delay
   }
-  setWiperPositionRateLimited(digi_value);
+  analogWrite(PWM_PIN_FMOTOR, digi_value);
 }
 
 /*
@@ -390,9 +377,12 @@ float wrapAngle(float angle) {
 }
 
 void returnToHome(){
-  trackingEnabled = false; 
-  //gotoAngle(0);
-
+  trackingEnabled = false;
+  setPropSpeedRear('r', 0);
+  setPropSpeedRear('l', 0);
+  gotoAngle(0, positionCountR, CW_PIN_R, CCW_PIN_R, SPEED_PIN_ESCON_R);  
+  gotoAngle(0, positionCountL, CW_PIN_L, CCW_PIN_L, SPEED_PIN_ESCON_L);
+  setPropSpeedFront('s', 0);
 }
 
 
