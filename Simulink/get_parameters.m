@@ -23,7 +23,7 @@ boat_dimensions = [length_x, length_y ,length_z];
 
 % The boat is pointing in the y direction
 % With the angle measured from x to x axis
-
+r = 0;
 %             [x,   y, angle, distance from origin]
 moter_left  = [-length_x/2, -length_y/2+r, 0, 0];
 moter_right = [ length_x/2, -length_y/2+r, 0, 0];
