@@ -1,23 +1,34 @@
 function [x_hat,P] = extended_kalman_filter_sim(time, olde_time, P_m1, Xp_m1, u_m1, y)
     td = time - olde_time;
-        m = 1500; b = -1000;
-    Q_m1 = diag([1e-5, 1e-5, 1e-5]);
-    R = diag([1e-2, 1e-3, 1e-2]);
+     m = 1500; b = 0;
+    Q_m1 = diag([1e-5, 1e-5, 1e-1]);
+    %-----HS changed process noise for damping to allow faster changes ---
+    %
+    R =1*diag([1e-2, 1e-3, 1e-2]);
     
-    h = @(Xp_m1) [Xp_m1(1); 0; 0];
-    f = @(xp_m1, u_m1) xp_m1 + [0, 1, 0 ;0, b/m+xp_m1(3), 0; 0, 0, 0]*xp_m1*td + [0, 1/m, 0]*td*u_m1;% + [0;0;Xp_m1(3)];
-    %f = @(xp_m1, u_m1) xp_m1 + [0, 1, 0; 0, (b+bc)/m, 0; 0, 0, 1]*xp_m1*td + [0, 1/m, 0]*td*u_m1;
-    %                  0, bc/m, b/m;
-    %                  0, 0, 0 ]*diag(Xp_m1)% to Jacobian of the system state.
-    F_m1 = @(Xp_m1) [1, td, 0;
-                     0, 1+td*(b/m+Xp_m1(3)), td;
+    h = @(xp_m1) [xp_m1(1); 0; 0];
+    %f = @(xp_m1, u_m1) xp_m1 + [0, 1, 0 ;0, b/m-xp_m1(3)/m, 0; 0, 0, 0]*xp_m1*td + [0, 1/m, 0]*td*u_m1;% + [0;0;Xp_m1(3)];
+    
+    %--------HS------------------
+    f = @(xp_m1, u_m1) xp_m1 + [0, 1, 0 ;0, b/m-xp_m1(3)/m, 0; 0, 0, 0]*xp_m1*td + [0,0,0;0, 1/m, 0;0,0,0]*td*u_m1;% + [0;0;Xp_m1(3)];
+    %-------------HS-------------
+
+
+    % F_m1 = @(Xp_m1) [1, td, 0;
+    %                  0, 1+td*(b/m+Xp_m1(3)/m), td;
+    %                  0, 0, 1];
+
+    %----------HS ------------------
+    F_m1 = @(xp_m1) [1, td, 0;
+                     0, 1-td*xp_m1(3)/m, -td*xp_m1(2)/m;
                      0, 0, 1];
-                      
+    %-------------HS----------------
+
     L_m1 = @(w) [1, 0, 0;
                  0, 1, 0;
                  0, 0, 1];
     H_f = @(Xp_m1) [1, 0, 0; % C matrix
-                    0, 1, 1;
+                    0, 0, 0;
                     0, 0, 0];
     
     M_f = @(Xp_m1) [1, 0, 0;
@@ -28,6 +39,9 @@ function [x_hat,P] = extended_kalman_filter_sim(time, olde_time, P_m1, Xp_m1, u_
     I = eye(3);
     Pm = F_m1(Xp_m1)*P_m1*F_m1(Xp_m1)'+L_m1(Xp_m1)*Q_m1*L_m1(Xp_m1)';
     Xm = f(Xp_m1,u_m1);
+    
+    rank(obsv(F_m1(Xp_m1),H));
+    cond(obsv(F_m1(Xp_m1),H))
 
     H = H_f(Xp_m1);
     M = M_f([1;1;1]);
