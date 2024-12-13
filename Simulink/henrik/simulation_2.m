@@ -9,7 +9,7 @@
 
 clear all; close all; clc;
 
-N = 1000 % Number of simulation steps
+N = 10000 % Number of simulation steps
 time = zeros(1, N); 
 ts = 0.1; % Time step size
 time = ts:ts:N * ts;
@@ -38,7 +38,7 @@ for i = 2:N
     % Compute true system dynamics
     x(:, i) = dynamics(time(i), time(i-1), x(:, i-1), u(:, i-1), d);
     % Add noise to measurement
-    noisy_measurement = x(:, i-1) + [1, 1, 1, 0, 0, 0, 0, 0, 0] * random('Normal', 0, 1, [9, 1]) * 10;
+    noisy_measurement = x(:, i-1) + [1, 1, 1, 0, 0, 0, 0, 0, 0] * random('Normal', 0, 1, [9, 1]) * 2;
     % Apply extended Kalman filter
     [x_est(:, i), P_est] = extended_kalman_filter_sim_2(time(i), time(i-1), P_est, x_est(:, i-1), u(:, i-1), noisy_measurement);
 end
@@ -148,9 +148,9 @@ function [x_next] = dynamics(current_time, previous_time, x, u, b)
                               0 0 0 0 0 0 0 0 0]*xp_m1*td + [0,0,0,0,0;
                                                              0,0,0,0,0;
                                                              0,0,0,0,0;
-                                                             1,0,1,0,1;
-                                                             0,1,0,1,0;
-                                                             -y1/m, t1x/m, -y2/m, t2x/m, -y3/m;
+                                                             1/m,0,1/m,0,1/m;
+                                                             0,1/m,0,1/m,0;
+                                                             -y1/I, t1x/I, -y2/I, t2x/I, -y3/I;
                                                              0,0,0,0,0;
                                                              0,0,0,0,0;
                                                              0,0,0,0,0]*td*u_m1;

@@ -69,6 +69,6 @@ A = [b_x/mass 0        0           ;
      0        b_y/mass 0           ;
      0        0        b_t/inertia];
 
-wind_gain = 5;
+wind_gain = 0;
 
 end
