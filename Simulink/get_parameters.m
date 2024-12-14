@@ -55,13 +55,13 @@ inertia = (length_y^2+length_x^2)*mass*1/12;
 
 % friction in the following direction.moter_left
 sigma = 50*ng; if arg1; r = random('Normal',mu,sigma); else r = 0; end
-b_x = -100+r;
+b_x = -1000+r;
 
 sigma = 500*ng; if arg1; r = random('Normal',mu,sigma); else r = 0; end
-b_y = -1000+r;
+b_y = -10000+r;
 
 sigma = 1000*ng; if arg1; r = random('Normal',mu,sigma); else r = 0; end
-b_t = -2000+r;
+b_t = -80000+r;
 
 friction = [b_x, b_y, b_t]
 
