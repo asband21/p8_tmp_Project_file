@@ -1,16 +1,16 @@
 
 #define IN1 13  // PWM for Motor 1       
-#define IN2 12  // Direction for Motor 1
+#define IN2 11  // Direction for Motor 1
 #define IN3 8  // PWM for Motor 2
 #define IN4 10  // Direction for Motor 2
-#define SPEED_PIN  11 //Pin for angle velocity
-#define ENCODER_A_PIN 22  // Channel A
-#define ENCODER_B_PIN 23  // Channel B
-#define CW_PIN 32 // Clockwise motor pin
-#define CCW_PIN 33 // Counter-clockwise motor pin
+#define SPEED_PIN  12 //Pin for angle velocity
+#define ENCODER_A_PIN 18  // Channel A
+#define ENCODER_B_PIN 19  // Channel B
+#define CW_PIN 24 // Clockwise motor pin
+#define CCW_PIN 25 // Counter-clockwise motor pin
 
 #define ALLOWEDERRORINNER 0.05
-#define ALLOWEDERROROUTER 10 
+#define ALLOWEDERROROUTER 0.5 
 
 //Angular velocity PWMS
 #define MAXSPEEDPWM 229
@@ -27,7 +27,7 @@ bool trackingEnabled = false;
 
 volatile long positionCount = 0;
 int lastAState = LOW;
-const float ppr = 2587;  // Pulses per revolution of encoder 10347og
+const float ppr = 5174;  // Pulses per revolution of encoder 10347og 2587
 
 float goalAngle = 0;
 const float Kp = 0.5;  // Proportional gain for speed control
@@ -40,7 +40,7 @@ void setup() {
   pinMode(IN4, OUTPUT);
   pinMode(SPEED_PIN, OUTPUT);
   
-  Serial.begin(9600);
+  Serial.begin(115200);
   analogWrite(IN1, 0);
   analogWrite(IN3, 0);
   digitalWrite(IN2, LOW);
@@ -197,6 +197,7 @@ void updatePosition() {
     } else {
       positionCount--; // Counter-clockwise
     }
+    Serial.println(positionCount);
   }
   lastAState = aState;
 }

@@ -44,18 +44,18 @@ byte digipotUpdatePosition = 45;
 
 #define RMOTORPROP 13  // PWM for Motor 1       
 #define LMOTORPROP 8  // PWM for Motor 2
-#define SPEED_PIN_ESCON_R  11 //Pin for angle velocity right motor
-#define SPEED_PIN_ESCON_L  12 //Pin for angle velocity
-#define ENCODER_A_PIN_R 20  // Channel A left motor
-#define ENCODER_B_PIN_R 21  // Channel B left motor
-#define ENCODER_A_PIN_L 24  // Channel A right motor
-#define ENCODER_B_PIN_L 25  // Channel B right motor
+#define SPEED_PIN_ESCON_R  12 //Pin for angle velocity right motor
+#define SPEED_PIN_ESCON_L  11 //Pin for angle velocity
+#define ENCODER_A_PIN_R 18  // Channel A left motor
+#define ENCODER_B_PIN_R 19  // Channel B left motor
+#define ENCODER_A_PIN_L 20  // Channel A right motor
+#define ENCODER_B_PIN_L 21  // Channel B right motor
 
-#define CW_PIN_R 32 // Clockwise motor pin right motor
-#define CCW_PIN_R 33 // Counter-clockwise motor pin right motor
+#define CW_PIN_R 24 // Clockwise motor pin right motor
+#define CCW_PIN_R 25 // Counter-clockwise motor pin right motor
 
-#define CW_PIN_L 34 // Clockwise motor pin left motor
-#define CCW_PIN_L 35 // Counter-clockwise motor pin left motor
+#define CW_PIN_L 22 // Clockwise motor pin left motor
+#define CCW_PIN_L 23 // Counter-clockwise motor pin left motor
 
 #define ALLOWEDERRORINNER 0.05
 #define ALLOWEDERROROUTER 10 
@@ -73,10 +73,10 @@ volatile bool updateGoals = false;  // NEW ANGLE FLAG
 volatile long positionCountR = 0;
 volatile long positionCountL = 0;
 
-const float ppr = 5173;  // Pulses per revolution of encoder 10347og    2587
+const float ppr = 5173;  // Pulses per revolution of encoder 10347og  
 float goalAngleR = 0;
 float goalAngleL = 0;
-const float Kp = 1.3;  // Proportional gain for speed control
+const float Kp = 10;  // Proportional gain for ang velocity control
 
 long int errorEncoderTrackingOuter = ppr * ALLOWEDERROROUTER / 360;
 long int errorEncoderTrackingINNER = ppr * ALLOWEDERRORINNER / 360;
@@ -95,6 +95,10 @@ long int errorEncoderTrackingINNER = ppr * ALLOWEDERRORINNER / 360;
   int throttleL=0;
   int throttleF=0;
 
+
+  long lastITR=0; //DELETE
+
+  
 void setup() {
   Serial.begin(115200);
 
@@ -131,15 +135,20 @@ void setup() {
 //digipot
  lastWiperPosition = digipot.getWiperPosition();
 
-
+/*
 // TESTER INTERRUPT
-  pinMode(19, INPUT_PULLUP); 
-  attachInterrupt(digitalPinToInterrupt(19), updateGoalAngles, FALLING);
+  pinMode(3, INPUT_PULLUP); 
+  attachInterrupt(digitalPinToInterrupt(3), updateGoalAngles, FALLING); //DELETE 
   randomSeed(analogRead(0));  // Seed for randomness (only for testing)
+*/
 
 }
 
 void loop() {
+
+  static unsigned long lastTime = 0;
+  unsigned long currentTime = millis();
+
 
   if ( digipot.isLocked() ) {
     if (millis() - lastLockedAt > rateLimit) {
@@ -149,52 +158,49 @@ void loop() {
     }
   }
 
-  // CHECK SERIAL HERE INSTEAD OF FLAG
-  if (updateGoals) {
-    int result = sscanf(commandString, "%c %d %d %d %d %d", 
+//    if (currentTime - lastTime >= 10) {  // Log every 10 ms //FOR ANG RESPONSE TESTING
+//    float angle = (positionCountR * 360.0) / ppr;  // Convert count to angle
+//    Serial.print(currentTime);  // Time in milliseconds
+//    Serial.print(",");
+//    Serial.println(angle);  // Angle in degrees
+//    lastTime = currentTime;
+//    }
+
+//  // CHECK SERIAL HERE INSTEAD OF FLAG
+//                                                                        if (updateGoals) {
+//                                                                          int result = sscanf(commandString, "%c %d %d %d %d %d", 
+//                                                                                              &directionF, 
+//                                                                                              &throttleF, 
+//                                                                                              &angleR, 
+//                                                                                              &throttleR, 
+//                                                                                              &angleL, 
+//                                                                                              &throttleL);
+////      
+  if (Serial.available() > 0) {
+    String inputString = Serial.readStringUntil('\n');
+    inputString.trim(); 
+    //string in the format: "f 50 90 60 180 70"
+    int result = sscanf(inputString.c_str(), "%c %d %d %d %d %d", 
                         &directionF, 
                         &throttleF, 
                         &angleR, 
                         &throttleR, 
                         &angleL, 
                         &throttleL);
-      
 
     //SHOULD WE DISABLE PROP SPEED WHILE ROTATING?
     if(result == 6){
-      Serial.println(commandString);
       setPropSpeedFront(directionF, throttleF);
       setPropSpeedRear('r', throttleR); 
-      //setPropSpeedRear('r', 100); //remove this one after testing, just avoiding noise on the lab
       setPropSpeedRear('l', throttleL);
       goalAngleR=wrapAngle(angleR);
       goalAngleL=wrapAngle(angleL);
-      goalPositionCountR = -(goalAngleR * ppr / 360);
-      goalPositionCountL = -(goalAngleL * ppr / 360);
-      updateGoals=false;
+      goalPositionCountR = (goalAngleR * ppr / 360);
+      goalPositionCountL = (goalAngleL * ppr / 360);
     }
-    else
-      Serial.println("Serial fail");
   }
   int errorR = goalPositionCountR - positionCountR;
   int errorL = goalPositionCountL - positionCountL;
-
-if(loope==100){
-  Serial.println(":::");
-  Serial.println(errorR*360/ppr);
-  Serial.println(goalPositionCountR*360/ppr);
-  Serial.println(positionCountR*360/ppr);
-
-  // Serial.println(errorR);
-  // Serial.println(goalPositionCountR);
-  // Serial.println(positionCountR);
-  loope=0;
-  }
-
-  // CHECK FRONT MOTOR ROTATION
-  // PUT A RATE LIMIT AND A FLAG TO KNOW IF THE LAST VALUE HAS BEEN CHANGED OR NOT MAYBE RATE LIMIT OF 1 SECOND
-  // DIGI POTENTIOMETER KINDA SUCKS
-  // MIGHT STILL GO TO LOW PASS FILTER
 
 
   // Right Motor Control
@@ -209,9 +215,9 @@ if(loope==100){
   } else {
     stopMotor(CW_PIN_L, CCW_PIN_L, SPEED_PIN_ESCON_L);
   }
-  loope++;
-  delay(10);  // Small delay to stabilize
+  delay(10); 
 }
+
 
 bool setWiperPositionRateLimited(byte position) {
   if (digipot.isLocked()) {
@@ -219,11 +225,11 @@ bool setWiperPositionRateLimited(byte position) {
     digipotUpdatePosition = position;
     return false;  // Do nothing if locked
   }
-  // Unlock and set the position
+  // Unlock and change digipot valuue
   digipot.unlock();
   digipot.setWiperPosition(position);
   digipot.lock();
-  // Update the lock timestamp
+  // Update the locktime
   digipotNeedsUpdate = false;
   lastLockedAt = millis();
   return true;
@@ -272,6 +278,7 @@ void movebwd(int throttle){
   setWiperPositionRateLimited(digi_value);
 }
 
+//PWM VARIANT OF FUNCTIONS
 /*
 void movefwd(int throttle){
   uint8_t pwm_value= map(throttle, 0, 100, TOPTOBOTFWDCUT, FWDMAXSPEEDPWM);
@@ -296,6 +303,7 @@ void movebwd(int rpm){
 }
 
 */
+//PWM END
 
 void setPropSpeedRear(char motor,int throttle){
   if(throttle>100)
@@ -339,28 +347,32 @@ void updatePositionL() {
 }
 
 void updateGoalAngles() {
+  
   char directionmotf;
 
   int t1, t2, tf;
   int a1, a2;
-  a1= random(0,360);
-  a2=random(0,360);
-  t1= random(0,101);
-  t2= random(0,101);
-  tf= random(0,101);
-  // Serial.println(tf);
-  // Serial.println(a1);
-  // Serial.println(t1);
-  // Serial.println(a2);
-  // Serial.println(t2);
-  if(random(0,2)==1)
-    directionmotf='f';
-  else 
-    directionmotf='b';//                                     throttle Front   ang r right  thr r right   ang r LEFt       thr r left
-  //sprintf(commandString, "%c %d %d %d %d %d", directionmotf, random(0,101), random(0,360), random(0,101), random(0,360), random(0,101));
-  sprintf(commandString, "%c %d %d %d %d %d", directionmotf, tf, a1, t1, a2, t2);
-  updateGoals = true;
-  //Serial.println(commandString);
+  if(millis() - lastITR > 500) {
+    a1= random(0,360);
+    a2=random(0,360);
+    t1= random(0,101);
+    t2= random(0,101);
+    tf= random(0,101);
+    // Serial.println(tf);
+    // Serial.println(a1);
+    // Serial.println(t1);
+    // Serial.println(a2);
+    // Serial.println(t2);
+    if(random(0,2)==1)
+      directionmotf='f';
+    else 
+      directionmotf='b';//                                     throttle Front   ang r right  thr r right   ang r LEFt       thr r left
+    //sprintf(commandString, "%c %d %d %d %d %d", directionmotf, random(0,101), random(0,360), random(0,101), random(0,360), random(0,101));
+    sprintf(commandString, "%c %d %d %d %d %d", directionmotf, tf, a1, t1, a2, t2);
+    updateGoals = true;
+    //Serial.println(commandString);
+    lastITR=millis();
+  }
 }
 
 void controlMotor(float error, int cwPin, int ccwPin, int speedPin) {
@@ -390,14 +402,14 @@ float wrapAngle(float angle) {
 }
 
 void returnToHome(){
-  trackingEnabled = false; 
-  //gotoAngle(0);
+  trackingEnabled = false;
+  setPropSpeedRear('r', 0);
+  setPropSpeedRear('l', 0);
+  gotoAngle(0, positionCountR, CW_PIN_R, CCW_PIN_R, SPEED_PIN_ESCON_R);  
+  gotoAngle(0, positionCountL, CW_PIN_L, CCW_PIN_L, SPEED_PIN_ESCON_L);
+  setPropSpeedFront('s', 0);
 
 }
-
-
-
-
 
 void gotoAngle(float goalAngle, volatile long &positionCount, int cwPin, int ccwPin, int speedPin) {
   long int goalPositionCount= -(goalAngle*ppr/360);
