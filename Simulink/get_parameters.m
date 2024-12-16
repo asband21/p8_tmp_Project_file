@@ -44,7 +44,6 @@ moter_left(3)  = atan2( moter_left(2), moter_left(1) );
 moter_right(3) = atan2(moter_right(2), moter_right(1));
 moter_bow(3)   = atan2(  moter_bow(2), moter_bow(1)  );
 
-
 sigma = 1500*ng; if arg1; r = random('Normal',mu,sigma); else r = 0; end
 mass = 3000+r;
 
@@ -58,10 +57,10 @@ sigma = 50*ng; if arg1; r = random('Normal',mu,sigma); else r = 0; end
 b_x = -1000+r;
 
 sigma = 500*ng; if arg1; r = random('Normal',mu,sigma); else r = 0; end
-b_y = -10000+r;
+b_y = -1000+r;
 
 sigma = 1000*ng; if arg1; r = random('Normal',mu,sigma); else r = 0; end
-b_t = -80000+r;
+b_t = -2000+r;
 
 friction = [b_x, b_y, b_t]
 

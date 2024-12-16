@@ -9,7 +9,7 @@
 
 clear all; close all; clc;
 
-N = 10000 % Number of simulation steps
+N = 100000 % Number of simulation steps
 time = zeros(1, N); 
 ts = 0.1; % Time step size
 time = ts:ts:N * ts;
