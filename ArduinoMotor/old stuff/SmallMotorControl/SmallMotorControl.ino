@@ -1,16 +1,16 @@
 
 #define IN1 13  // PWM for Motor 1       
-#define IN2 12  // Direction for Motor 1
+#define IN2 11  // Direction for Motor 1
 #define IN3 8  // PWM for Motor 2
 #define IN4 10  // Direction for Motor 2
-#define SPEED_PIN  11 //Pin for angle velocity
-#define ENCODER_A_PIN 2  // Channel A
-#define ENCODER_B_PIN 3  // Channel B
-#define CW_PIN 5 // Clockwise motor pin
-#define CCW_PIN 6 // Counter-clockwise motor pin
+#define SPEED_PIN  12 //Pin for angle velocity
+#define ENCODER_A_PIN 18  // Channel A
+#define ENCODER_B_PIN 19  // Channel B
+#define CW_PIN 24 // Clockwise motor pin
+#define CCW_PIN 25 // Counter-clockwise motor pin
 
 #define ALLOWEDERRORINNER 0.05
-#define ALLOWEDERROROUTER 10 
+#define ALLOWEDERROROUTER 0.5 
 
 //Angular velocity PWMS
 #define MAXSPEEDPWM 229
@@ -27,7 +27,7 @@ bool trackingEnabled = false;
 
 volatile long positionCount = 0;
 int lastAState = LOW;
-const float ppr = 10347;  // Pulses per revolution of encoder
+const float ppr = 5174;  // Pulses per revolution of encoder 10347og 2587
 
 float goalAngle = 0;
 const float Kp = 0.5;  // Proportional gain for speed control
@@ -40,7 +40,7 @@ void setup() {
   pinMode(IN4, OUTPUT);
   pinMode(SPEED_PIN, OUTPUT);
   
-  Serial.begin(9600);
+  Serial.begin(115200);
   analogWrite(IN1, 0);
   analogWrite(IN3, 0);
   digitalWrite(IN2, LOW);
@@ -120,7 +120,6 @@ void loop() {
       analogWrite(IN3, 255 - pwmValue);    // Motor 2 increasing
       delay(50);
     }
-
     // Check for "exit" command to leave auto mode
     if (Serial.available() > 0) {
       String input = Serial.readStringUntil('\n');
@@ -188,21 +187,20 @@ float getDeltaRotation(float currentAngle, float goalAngle) { //Chatgpt did this
   return delta;
 }
 
-
 void updatePosition() {
   int aState = digitalRead(ENCODER_A_PIN);
   int bState = digitalRead(ENCODER_B_PIN);
 
   if (aState != lastAState) {
-    if (aState == HIGH && bState == LOW || aState == LOW && bState == HIGH){
-      positionCount--; 
+    if (aState == HIGH && bState == LOW || aState == LOW && bState == HIGH) {
+      positionCount++; // Clockwise
     } else {
-      positionCount++;
+      positionCount--; // Counter-clockwise
     }
+    Serial.println(positionCount);
   }
   lastAState = aState;
 }
-
 
 void refTracking(float goalAngle ) {
   long int allowedTrackingError= ppr*ALLOWEDERRORINNER/360;
