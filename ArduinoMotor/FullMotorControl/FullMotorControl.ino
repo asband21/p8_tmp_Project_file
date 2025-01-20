@@ -19,7 +19,6 @@ DS1804 digipot = DS1804(CSPIN, INCPIN, UDPIN, DS1804_HUNDRED); //Digital potenti
 
 unsigned long rateLimit = 1000;	// time in ms required between changes in digi pot
 long lastLockedAt = -1*rateLimit;
-byte lastWiperPosition;
 bool digipotNeedsUpdate = true;
 byte digipotUpdatePosition = 45;
 
@@ -65,11 +64,6 @@ byte digipotUpdatePosition = 45;
 #define MIDSPEEDPWM 140
 #define MINSPEEDPWM 26
 
-
-bool trackingEnabled = false;
-volatile bool updateGoals = false;  // NEW ANGLE FLAG
-
-
 volatile long positionCountR = 0;
 volatile long positionCountL = 0;
 
@@ -81,23 +75,16 @@ const float Kp = 10;  // Proportional gain for ang velocity control
 long int errorEncoderTrackingOuter = ppr * ALLOWEDERROROUTER / 360;
 long int errorEncoderTrackingINNER = ppr * ALLOWEDERRORINNER / 360;
 
-  long int goalPositionCountR=0;
-  long int goalPositionCountL=0;
+long int goalPositionCountR=0;
+long int goalPositionCountL=0;
 
-
-  int loope = 0;
-
-  char commandString[50];
-  int angleR=0;
-  int angleL=0;
-  char directionF='f';
-  int throttleR=0;
-  int throttleL=0;
-  int throttleF=0;
-
-
-  long lastITR=0; //DELETE
-
+char commandString[50];
+int angleR=0;
+int angleL=0;
+char directionF='f';
+int throttleR=0;
+int throttleL=0;
+int throttleF=0;
   
 void setup() {
   Serial.begin(115200);
@@ -132,16 +119,6 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN_R), updatePositionR, RISING);
   attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN_L), updatePositionL, RISING);
 
-//digipot
- lastWiperPosition = digipot.getWiperPosition();
-
-/*
-// TESTER INTERRUPT
-  pinMode(3, INPUT_PULLUP); 
-  attachInterrupt(digitalPinToInterrupt(3), updateGoalAngles, FALLING); //DELETE 
-  randomSeed(analogRead(0));  // Seed for randomness (only for testing)
-*/
-
 }
 
 void loop() {
@@ -166,16 +143,6 @@ void loop() {
 //    lastTime = currentTime;
 //    }
 
-//  // CHECK SERIAL HERE INSTEAD OF FLAG
-//                                                                        if (updateGoals) {
-//                                                                          int result = sscanf(commandString, "%c %d %d %d %d %d", 
-//                                                                                              &directionF, 
-//                                                                                              &throttleF, 
-//                                                                                              &angleR, 
-//                                                                                              &throttleR, 
-//                                                                                              &angleL, 
-//                                                                                              &throttleL);
-////      
   if (Serial.available() > 0) {
     String inputString = Serial.readStringUntil('\n');
     inputString.trim(); 
@@ -204,7 +171,7 @@ void loop() {
 
 
   // Right Motor Control
-  if (abs(errorR) > errorEncoderTrackingINNER) { //WE CAN MAKE A FLAG TO ONLY GO HERE IF WE GET OUTSID THE ALLOWEDERROROUTER
+  if (abs(errorR) > errorEncoderTrackingINNER) {
     controlMotor(errorR, CW_PIN_R, CCW_PIN_R, SPEED_PIN_ESCON_R);
   } else {
     stopMotor(CW_PIN_R, CCW_PIN_R, SPEED_PIN_ESCON_R);
@@ -318,7 +285,7 @@ void setPropSpeedRear(char motor,int throttle){
     analogWrite(LMOTORPROP, pwm);
 }
 
-float getDeltaRotation(float currentAngle, float goalAngle) { //Chatgpt did this one but if you want you can debug yours
+float getDeltaRotation(float currentAngle, float goalAngle) {
   float delta = goalAngle - currentAngle;
   if (delta > 180) {
     delta -= 360; 
@@ -346,37 +313,9 @@ void updatePositionL() {
     }
 }
 
-void updateGoalAngles() {
-  
-  char directionmotf;
-
-  int t1, t2, tf;
-  int a1, a2;
-  if(millis() - lastITR > 500) {
-    a1= random(0,360);
-    a2=random(0,360);
-    t1= random(0,101);
-    t2= random(0,101);
-    tf= random(0,101);
-    // Serial.println(tf);
-    // Serial.println(a1);
-    // Serial.println(t1);
-    // Serial.println(a2);
-    // Serial.println(t2);
-    if(random(0,2)==1)
-      directionmotf='f';
-    else 
-      directionmotf='b';//                                     throttle Front   ang r right  thr r right   ang r LEFt       thr r left
-    //sprintf(commandString, "%c %d %d %d %d %d", directionmotf, random(0,101), random(0,360), random(0,101), random(0,360), random(0,101));
-    sprintf(commandString, "%c %d %d %d %d %d", directionmotf, tf, a1, t1, a2, t2);
-    updateGoals = true;
-    //Serial.println(commandString);
-    lastITR=millis();
-  }
-}
 
 void controlMotor(float error, int cwPin, int ccwPin, int speedPin) {
-  int pwmSpeed = constrain(map(abs(error) * Kp, 0, ppr/2, MINSPEEDPWM, MAXSPEEDPWM), MINSPEEDPWM, MAXSPEEDPWM);
+  int pwmSpeed = constrain(map(abs(error) * Kp, 0, ppr, MINSPEEDPWM, MAXSPEEDPWM), MINSPEEDPWM, MAXSPEEDPWM);
 
   if (error > 0) {  // Clockwise
     analogWrite(speedPin, pwmSpeed);
@@ -426,85 +365,4 @@ void gotoAngle(float goalAngle, volatile long &positionCount, int cwPin, int ccw
   }
   digitalWrite(cwPin, LOW);
   digitalWrite(ccwPin, LOW);
-}
-
-void refTrackingLoop() {
-
-   goalPositionCountR = -(goalAngleR * ppr / 360);
-   goalPositionCountL = -(goalAngleL * ppr / 360);
-
-  bool skipR= false;
-  bool skipL= false;
-  gotoAngle(goalAngleR, positionCountR, CW_PIN_R, CCW_PIN_R, SPEED_PIN_ESCON_R);  
-  gotoAngle(goalAngleL, positionCountL, CW_PIN_L, CCW_PIN_L, SPEED_PIN_ESCON_L);  
-  while (trackingEnabled) {  // Stay in loop as long as tracking is enabled
-    // Check for stop command to exit tracking loop
-    if (Serial.available() > 0) {
-      String input = Serial.readStringUntil('\n');
-      input.trim();
-      if (input == "stop") {
-        trackingEnabled = false;
-        break;
-      }
-    }
-
-    if (updateGoals) {
-
-    goalPositionCountR = -(goalAngleR * ppr / 360);
-    goalPositionCountL = -(goalAngleL * ppr / 360);
-    updateGoals = false;
-
-    }
-
-    int errorR = goalPositionCountR - positionCountR;
-    int errorL = goalPositionCountL - positionCountL;
-
-    if (abs(errorR) <= errorEncoderTrackingOuter) {
-      digitalWrite(CW_PIN_R, LOW);
-      digitalWrite(CCW_PIN_R, LOW);
-      analogWrite(SPEED_PIN_ESCON_R, MINSPEEDPWM);  
-      skipR = true;     
-    }
-    if (abs(errorL) <= errorEncoderTrackingOuter) {
-      digitalWrite(CW_PIN_L, LOW);
-      digitalWrite(CCW_PIN_L, LOW);
-      analogWrite(SPEED_PIN_ESCON_L, MINSPEEDPWM);  
-      skipL = true;     
-    }
-
-    // P controll
-    int pwmSpeedR = constrain(map(abs(errorR) * Kp, 0, 180, MINSPEEDPWM, MAXSPEEDPWM), MINSPEEDPWM, MAXSPEEDPWM); 
-
-    if (errorR < 0) {  // Move clockwise
-      analogWrite(SPEED_PIN_ESCON_R, pwmSpeedR);
-      digitalWrite(CCW_PIN_R, LOW);
-      digitalWrite(CW_PIN_R, HIGH);
-    } else {           // Move counter-clockwise
-      analogWrite(SPEED_PIN_ESCON_R, pwmSpeedR);
-      digitalWrite(CW_PIN_R, LOW);
-      digitalWrite(CCW_PIN_R, HIGH);
-    }
-
-    int pwmSpeedL = constrain(map(abs(errorL) * Kp, 0, 180, MINSPEEDPWM, MAXSPEEDPWM), MINSPEEDPWM, MAXSPEEDPWM); 
-
-    if (errorL < 0) {  // Move clockwise
-      analogWrite(SPEED_PIN_ESCON_L, pwmSpeedL);
-      digitalWrite(CCW_PIN_L, LOW);
-      digitalWrite(CW_PIN_L, HIGH);
-    } else {           // Move counter-clockwise
-      analogWrite(SPEED_PIN_ESCON_L, pwmSpeedL);
-      digitalWrite(CW_PIN_L, LOW);
-      digitalWrite(CCW_PIN_L, HIGH);
-    }
-    skipR = false;
-    skipL = false;
-    delay(10);
-  }
-  //Stop tracking
-  digitalWrite(CW_PIN_R, LOW);
-  digitalWrite(CCW_PIN_R, LOW);
-  digitalWrite(CW_PIN_L, LOW);
-  digitalWrite(CCW_PIN_L, LOW);
-  analogWrite(SPEED_PIN_ESCON_R, MINSPEEDPWM); 
-  analogWrite(SPEED_PIN_ESCON_L, MINSPEEDPWM); 
 }
