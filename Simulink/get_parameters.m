@@ -31,12 +31,12 @@ moter_bow   = [ 0,             length_y-r, 0, 0];
 
 
 % calculating the distance from origin
-%moter_left(4)  = sqrt(moter_left(1)^2  + moter_left(2)^2 )
-%moter_right(4) = sqrt(moter_right(1)^2 + moter_right(2)^2)
-%moter_bow(4)   = sqrt(moter_bow(1)^2   + moter_bow(2)^2  )
-moter_left(4)  = norm(moter_left);
-moter_right(4) = norm(moter_right);
-moter_bow(4)   = norm(moter_bow);
+moter_left(4)  = sqrt(moter_left(1)^2  + moter_left(2)^2 )
+moter_right(4) = sqrt(moter_right(1)^2 + moter_right(2)^2)
+moter_bow(4)   = sqrt(moter_bow(1)^2   + moter_bow(2)^2  )
+%moter_left(4)  = norm(moter_left);
+%moter_right(4) = norm(moter_right);
+%moter_bow(4)   = norm(moter_bow);
 
 
 % calculating the reference of the angle.
@@ -66,8 +66,8 @@ friction = [b_x, b_y, b_t]
 
 A = [b_x/mass 0        0           ;
      0        b_y/mass 0           ;
-     0        0        b_t/inertia];
+     0        0        b_t/inertia]
 
-wind_gain = 0;
+wind_gain = 3;
 
 end

@@ -9,7 +9,7 @@
 
 clear all; close all; clc;
 
-N = 100000 % Number of simulation steps
+N = 30000 % Number of simulation steps
 time = zeros(1, N); 
 ts = 0.1; % Time step size
 time = ts:ts:N * ts;
@@ -43,6 +43,25 @@ for i = 2:N
     [x_est(:, i), P_est] = extended_kalman_filter_sim_2(time(i), time(i-1), P_est, x_est(:, i-1), u(:, i-1), noisy_measurement);
 end
 
+figure;
+subplot(3, 1, 1);
+plot(time, (x(7, :) + x_est(7, :)).^2, 'r');
+xlabel('Time (s)');
+ylabel('Squared error over time in x drag coefficient');
+title('estimated x drag coefficient');
+
+subplot(3, 1, 2);
+plot(time, (x(8, :)+ x_est(8, :)).^2, 'r');
+xlabel('Time (s)');
+ylabel('Squared error over time in y drag coefficient');
+title('estimated y drag coefficient');
+
+
+subplot(3, 1, 3);
+plot(time, (x(9, :) + x_est(9, :)).^2, 'r');
+xlabel('Time (s)');
+ylabel('Squared error over time in angular drag coefficient');
+title('estimated angular drag coefficient');
 
 figure;
 subplot(3, 1, 1);
