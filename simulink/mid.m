@@ -7,8 +7,8 @@ f_n = @(x, v) x + [cos(x(3)) -sin(x(3)) 0;
 
 % Function to compute local velocity from previous and current state
 v_n = @(x, x_prev) [cos(x_prev(3))  sin(x_prev(3))  0;
-                    -sin(x_prev(3)) cos(x_prev(3))  0;
-                     0              0             1] * (x - x_prev);
+                   -sin(x_prev(3))  cos(x_prev(3))  0;
+                    0               0               1] * (x - x_prev);
 
 % Initialization
 num_steps = 101;
