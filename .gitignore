@@ -1,5 +1,6 @@
 
 *.slxc
+*.slx.original
 *.asv
 Simulink/slprj/
 simulink/slprj/
