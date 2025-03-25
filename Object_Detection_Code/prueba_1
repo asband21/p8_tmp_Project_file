@@ -1,0 +1,54 @@
+from ultralytics import YOLO
+from pathlib import Path
+from PIL import Image
+import pillow_avif
+
+
+
+# Ruta de la carpeta con las imágenes
+carpeta_path = Path(r"C:\Users\Eugen\Desktop\Documentos Curso 2do semestre\pbl\imagenes")
+
+# Cargar modelo YOLOv11
+model = YOLO("yolo11m.pt")  # Puedes usar otros modelos como yolov11s.pt o yolov11l.pt
+
+# Lista de formatos admitidos
+formatos = ["*.jpg", "*.png", "*.jpeg", "*.bmp", "*.webp"]
+
+# Iterar sobre todos los formatos
+for formato in formatos:
+    for imagen_path in carpeta_path.glob(formato):
+        try:
+            # Convertir AVIF a JPG si es necesario
+            if imagen_path.suffix.lower() == ".avif":
+                print(f"Convirtiendo {imagen_path} a .jpg")
+                avif_image = Image.open(imagen_path)
+                nuevo_path = imagen_path.with_suffix(".jpg")
+                avif_image.convert("RGB").save(nuevo_path, "JPEG")
+                imagen_path = nuevo_path
+
+            print(f"Analizando: {imagen_path}")
+
+            # Detectar objetos
+            results = model(str(imagen_path), imgsz=640)
+
+            # Filtrar solo detección de personas
+            for result in results:
+                nombres = result.names  # Clases detectadas
+                cajas = result.boxes  # Coordenadas de las cajas detectadas
+
+                # Filtrar solo personas
+                personas_detectadas = [cajas[i] for i, clase in enumerate(cajas.cls) if nombres[int(clase)] == "person"]
+
+                if personas_detectadas:
+                    print(f"Persona detectada en: {imagen_path.name}")
+                    result.boxes = personas_detectadas  # Mantener solo las detecciones de personas
+                    result.show()
+                    result.save(filename=f"runs/detect/predict/{imagen_path.stem}_person_detect.jpg")
+                    print(f"Imagen guardada: {imagen_path.stem}_person_detect.jpg")
+                else:
+                    print(f"No se detectaron personas en: {imagen_path.name}")
+
+        except Exception as e:
+            print(f"Error al analizar {imagen_path.name}: {e}")
+
+print("Análisis terminado")
